@@ -9,7 +9,7 @@ import (
 	"programs/src/server/handler"
 )
 
-func main()  {
+func main() {
 
 	config, err := config.GetConfig()
 	if err != nil {
@@ -22,10 +22,8 @@ func main()  {
 	}
 	//init websocket instance
 	upgrade := websocket.Upgrader{}
-	// init messageQueue
-	messageQueue := make(chan []byte, config.MaximumQueueSize)
 	// init new handler
-	handler := handler.NewHandler(config, logger, upgrade, &messageQueue)
+	handler := handler.NewHandler(config, logger, upgrade)
 
 	// run server
 	http.HandleFunc("/broadcast", func(writer http.ResponseWriter, request *http.Request) {
@@ -36,6 +34,7 @@ func main()  {
 		handler.WebSocketHandler(writer, request)
 	})
 
-	http.ListenAndServe(config.ListenAddress, nil)
 	fmt.Println("server listening on  ", config.ListenAddress)
+
+	http.ListenAndServe(config.ListenAddress, nil)
 }

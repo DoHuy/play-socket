@@ -14,29 +14,27 @@ import (
 )
 
 type Handler struct {
-	config *config.Config
-	upgrade	websocket.Upgrader
-	logger	log.Logger
-	messageQueue *chan []byte
-	service	service.Service
-
+	config  *config.Config
+	upgrade websocket.Upgrader
+	logger  log.Logger
+	service service.Service
 }
 
-func NewHandler(config *config.Config, logger log.Logger, upgrade websocket.Upgrader, messageQueue *chan []byte) *Handler {
-	serviceInstance := service.NewSendMessageService(messageQueue)
+func NewHandler(config *config.Config, logger log.Logger, upgrade websocket.Upgrader) *Handler {
+	serviceInstance := service.NewSendMessageService(config)
 	return &Handler{
-		config: config,
+		config:  config,
 		upgrade: upgrade,
-		logger: logger,
-		messageQueue: messageQueue,
+		logger:  logger,
 		service: serviceInstance,
 	}
 }
+
 /*
 impl health check for server i think every apis server need it,
- */
+*/
 func (h *Handler) Health(w http.ResponseWriter, r *http.Request) {
-	resp := util.BuildResponse(http.StatusOK,nil, "Alive")
+	resp := util.BuildResponse(http.StatusOK, nil, "Alive")
 	json.NewEncoder(w).Encode(resp)
 	return
 }
@@ -70,7 +68,7 @@ func (h *Handler) BroadCastMessageHandler(w http.ResponseWriter, r *http.Request
 	timestamp := time.Now().Unix()
 	if err := h.service.BroadcastMessage(timestamp, body.Message); err != nil {
 		h.logger.Error("broadcast to queue failed", zap.Error(err))
-		json.NewEncoder(w).Encode(util.BuildResponse(http.StatusInternalServerError, nil, "server internal error"))
+		_ = json.NewEncoder(w).Encode(util.BuildResponse(http.StatusInternalServerError, nil, "server internal error"))
 		return
 	}
 	h.logger.Debug("Broadcast message success", zap.String("message", body.Message), zap.Int64("timestamp", timestamp))
@@ -88,33 +86,36 @@ func (h *Handler) WebSocketHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.logger.Debug("init connection socket success")
-
 	for {
 		// receive message from websocket client
 		messageType, p, err := conn.ReadMessage()
 		if err != nil {
-			h.logger.Error("read message failed", zap.String("error", err.Error()), zap.Int("message_type", messageType))
-			return
+			h.logger.Debug("read message failed", zap.String("error", err.Error()), zap.Int("message_type", messageType))
 		}
-		h.logger.Info("receiving message via websocket", zap.String("content", string(p)))
-		if err := conn.WriteMessage(messageType, p); err != nil {
-			h.logger.Error("write message failed", zap.Error(err), zap.Int("message_type", messageType))
-			return
-		}
-		// read message from queue
-		for  {
-			select {
-			case <- *h.messageQueue:
-				var fromPublisher []byte
-				fromPublisher = <- *h.messageQueue
-				if err := conn.WriteMessage(messageType, fromPublisher); err != nil {
-					h.logger.Error("write message failed", zap.Error(err), zap.Int("message_type", messageType), zap.String("content", string(fromPublisher)))
-					return
-				}
-			default:
-				h.logger.Debug("Queue empty")
+		if len(p) != 0 {
+			h.logger.Info("receiving message via websocket", zap.String("content", string(p)))
+			if err := conn.WriteMessage(messageType, p); err != nil {
+				h.logger.Error("write message failed", zap.Error(err), zap.Int("message_type", messageType))
+				return
 			}
 		}
-	}
+		// read message from broadcast
+		var previousData []byte
+		for {
+			raw, err := ioutil.ReadFile(h.config.TemporaryFile)
+			if err != nil {
+				h.logger.Error("write message failed", zap.Error(err), zap.Int("message_type", messageType))
+				return
+			}
+			if string(raw) == string(previousData) {
+				continue
+			}
+			previousData = raw
+			if err := conn.WriteMessage(messageType, raw); err != nil {
+				h.logger.Error("write message failed", zap.Error(err), zap.Int("message_type", messageType), zap.String("content", string(raw)))
+			}
 
+		}
+
+	}
 }
