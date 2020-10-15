@@ -26,7 +26,7 @@ services:
       - server
     environment:
       - PUBLISHING_LOG_PATH=publishing.log
-      - HOST=0.0.0.0:8080
+      - HOST=server:8080
       - INTERVAL_TIME=10
       - ENV_MODE=PRODUCTION
     volumes:
@@ -40,10 +40,13 @@ services:
       - backend
     environment:
       - WEBSOCKET_LOG_PATH=websocket.log
-      - HOST=0.0.0.0:8080
+      - HOST=server:8080
       - ENV_MODE=PRODUCTION
+    depends_on:
+      - server
     volumes:
       - ./websocket.log:/websocket.log
+    restart: always
 networks:
   backend:
     driver: bridge
