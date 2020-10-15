@@ -89,32 +89,35 @@ func (h *Handler) WebSocketHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	h.logger.Debug("init connection socket success")
 	for {
-		// receive message from websocket client
-		messageType, p, err := conn.ReadMessage()
-		if err != nil {
-			h.logger.Debug("read message failed", zap.String("error", err.Error()), zap.Int("message_type", messageType))
-		}
-		if len(p) != 0 {
-			h.logger.Info("receiving message via websocket", zap.String("content", string(p)))
-			if err := conn.WriteMessage(messageType, p); err != nil {
-				h.logger.Error("write message failed", zap.Error(err), zap.Int("message_type", messageType))
-				return
-			}
-		}
 		// read message from broadcast
+		var err error
+		var raw []byte
 		var previousData []byte
 		for {
-			raw, err := ioutil.ReadFile(h.config.TemporaryFile)
+			raw, err = ioutil.ReadFile(h.config.TemporaryFile)
 			if err != nil {
-				h.logger.Error("write message failed", zap.Error(err), zap.Int("message_type", messageType))
-				return
+				h.logger.Error("write message failed", zap.Error(err), zap.Int("message_type", 1))
+				break
 			}
 			if string(raw) == string(previousData) {
 				continue
 			}
 			previousData = raw
-			if err := conn.WriteMessage(messageType, raw); err != nil {
-				h.logger.Error("write message failed", zap.Error(err), zap.Int("message_type", messageType), zap.String("content", string(raw)))
+			if len(raw) != 0 {
+				if err = conn.WriteMessage(websocket.TextMessage, raw); err != nil {
+					h.logger.Error("write message failed", zap.Error(err), zap.Int("message_type", websocket.TextMessage), zap.String("content", string(raw)))
+					break
+				}
+
+				// receive message from websocket client
+				var messageType int
+				var p []byte
+				messageType, p, err = conn.ReadMessage()
+				if err != nil {
+					h.logger.Debug("read message failed", zap.String("error", err.Error()), zap.Int("message_type", messageType))
+					break
+				}
+				h.logger.Info("receiving message via websocket", zap.String("content", string(p)))
 			}
 
 		}

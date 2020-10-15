@@ -35,10 +35,12 @@ func main() {
 		// Case to print current time
 		case <-ticker.C:
 			//todo
-			err := client.PushMessage()
+			message, err := client.PushMessage()
 			if err != nil {
 				logger.Error("push message failed", zap.Error(err))
-				logger.Info("server is not available")
+				logger.Warn("Server is not available")
+			} else {
+				logger.Info("broadcast message to server success", zap.String("content", message))
 			}
 		}
 	}

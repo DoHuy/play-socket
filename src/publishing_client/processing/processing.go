@@ -8,7 +8,7 @@ import (
 )
 
 type Client interface {
-	PushMessage() error
+	PushMessage() (string, error)
 }
 type publishingClient struct {
 	url    string
@@ -24,7 +24,7 @@ func NewPublishingClient(url string, config2 *config.Config, utilInstance util.U
 	}
 }
 
-func (i *publishingClient) PushMessage() error {
+func (i *publishingClient) PushMessage() (string, error) {
 	uri := fmt.Sprintf("http://%s%s", i.config.Host, i.url)
 
 	body := map[string]interface{}{
@@ -32,12 +32,12 @@ func (i *publishingClient) PushMessage() error {
 	}
 	rawBody, err := json.Marshal(body)
 	if err != nil {
-		return err
+		return "", err
 	}
 	var rs interface{}
 	err = i.utilInstance.ExecuteRequest(rawBody, &rs, uri)
 	if err != nil {
-		return err
+		return "", err
 	}
-	return err
+	return string(rawBody), err
 }

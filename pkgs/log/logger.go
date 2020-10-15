@@ -43,12 +43,13 @@ func initZapLogger(logfile string) (*zap.Logger, error) {
 	cfg := zap.NewDevelopmentConfig()
 	cfg.OutputPaths = []string{
 		logfile,
+		"stdout",
 	}
 	logger, err := cfg.Build()
 	if err != nil {
 		panic(err)
 	}
-	defer logger.Sync()
+	//defer logger.Sync()
 	return logger, err
 }
 

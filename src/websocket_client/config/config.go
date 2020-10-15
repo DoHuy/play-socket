@@ -5,7 +5,7 @@ import (
 )
 
 type Config struct {
-	WebSocketLogPath string `envconfig:"WEBSOCKET_LOG_PATH" default:"/var/log/websocket.log"`
+	WebSocketLogPath string `envconfig:"WEBSOCKET_LOG_PATH" default:"websocket.log"`
 	Host             string `envconfig:"HOST" default:"0.0.0.0:8080"`
 	EnvMode          string `envconfig:"ENV_MODE" default:"PRODUCTION"`
 }

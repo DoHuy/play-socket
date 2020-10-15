@@ -64,6 +64,7 @@ func (rc *WebSocketClient) Close() {
 
 // Close And Recconect will try to reconnect.
 func (rc *WebSocketClient) closeAndReConnect() {
+	rc.Logger.Info("Try reconnect to server")
 	rc.Close()
 	go func() {
 		rc.Connect()
@@ -80,6 +81,8 @@ func (rc *WebSocketClient) ReadMessage() (messageType int, message []byte, err e
 	if rc.IsConnected() {
 		messageType, message, err = rc.Connection.ReadMessage()
 		if err != nil {
+			rc.Logger.Error("read message failed", zap.Error(err))
+			rc.Logger.Warn("Server is not available")
 			rc.closeAndReConnect()
 		}
 	}
@@ -92,6 +95,8 @@ func (rc *WebSocketClient) WriteMessage(messageType int, data []byte) error {
 	if rc.IsConnected() {
 		err = rc.Connection.WriteMessage(messageType, data)
 		if err != nil {
+			rc.Logger.Error("write message failed", zap.Error(err))
+			rc.Logger.Warn("Server is not available")
 			rc.closeAndReConnect()
 		}
 	}
@@ -155,7 +160,7 @@ func (rc *WebSocketClient) Connect() {
 			break
 		} else {
 			if !rc.NonVerbose {
-				rc.Logger.Info("Server is not available")
+				rc.Logger.Warn("Server is not available")
 			}
 		}
 

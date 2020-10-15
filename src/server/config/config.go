@@ -6,7 +6,7 @@ import (
 
 type Config struct {
 	ListenAddress string `envconfig:"LISTEN_ADDRESS" default:"0.0.0.0:8080"`
-	ServerLogPath string `envconfig:"SERVER_LOG_PATH" default:"/var/log/server.log"`
+	ServerLogPath string `envconfig:"SERVER_LOG_PATH" default:"server.log"`
 	TemporaryFile string `envconfig:"TEMPORARY_FILE" default:"data.messages.tmp"`
 	EnvMode       string `envconfig:"ENV_MODE" default:"DEVELOPMENT"`
 }

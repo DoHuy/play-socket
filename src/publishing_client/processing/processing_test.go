@@ -27,6 +27,7 @@ func Test_publishingClient_PushMessage(t *testing.T) {
 		fields  fields
 		utilInstance util.Util
 		wantErr bool
+		want int
 	}{
 		// TODO: Add test cases.
 		{
@@ -39,6 +40,7 @@ func Test_publishingClient_PushMessage(t *testing.T) {
 			},
 			utilInstance: mockFailed,
 			wantErr: true,
+			want: 1,
 		},
 		{
 			name: "Request broadcast success",
@@ -51,18 +53,37 @@ func Test_publishingClient_PushMessage(t *testing.T) {
 			},
 			utilInstance: mock,
 			wantErr: false,
+			want: 1,
+		},
+		{
+			name: "Request broadcast success return string body",
+			fields: fields{
+				config: &config.Config{
+					Host: "0.0.0.0:8080",
+				},
+				url: "/broadcast",
+
+			},
+			utilInstance: mock,
+			wantErr: false,
+			want: 0,
 		},
 
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			i := &publishingClient{
-				url:    tt.fields.url,
-				config: tt.fields.config,
+				url:          tt.fields.url,
+				config:       tt.fields.config,
 				utilInstance: tt.utilInstance,
 			}
-			if err := i.PushMessage(); (err != nil) != tt.wantErr {
+			got, err := i.PushMessage()
+			if (err != nil) != tt.wantErr {
 				t.Errorf("PushMessage() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if len(got) == tt.want {
+				t.Errorf("PushMessage() got = %v, want %v", len(got), tt.want)
 			}
 		})
 	}
