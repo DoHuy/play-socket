@@ -3,6 +3,7 @@ package main
 import (
 	"go.uber.org/zap"
 	"programs/pkgs/log"
+	"programs/pkgs/util"
 	"programs/src/publishing_client/config"
 	"programs/src/publishing_client/processing"
 	"time"
@@ -19,8 +20,8 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
-	client := processing.NewPublishingClient("/broadcast", config)
+	utilInstance :=  util.NewUtil()
+	client := processing.NewPublishingClient("/broadcast", config, utilInstance)
 	// send with time T
 	ticker := time.NewTicker(time.Duration(config.IntervalTime) * time.Second)
 	stopSignal := make(chan bool)

@@ -18,15 +18,17 @@ type Handler struct {
 	upgrade websocket.Upgrader
 	logger  log.Logger
 	service service.Service
+	utilInstance	util.Util
 }
 
-func NewHandler(config *config.Config, logger log.Logger, upgrade websocket.Upgrader) *Handler {
+func NewHandler(config *config.Config, logger log.Logger, upgrade websocket.Upgrader, utilInstance util.Util) *Handler {
 	serviceInstance := service.NewSendMessageService(config)
 	return &Handler{
 		config:  config,
 		upgrade: upgrade,
 		logger:  logger,
 		service: serviceInstance,
+		utilInstance: utilInstance,
 	}
 }
 
@@ -34,7 +36,7 @@ func NewHandler(config *config.Config, logger log.Logger, upgrade websocket.Upgr
 impl health check for server i think every apis server need it,
 */
 func (h *Handler) Health(w http.ResponseWriter, r *http.Request) {
-	resp := util.BuildResponse(http.StatusOK, nil, "Alive")
+	resp := util.NewUtil().BuildResponse(http.StatusOK, nil, "Alive")
 	json.NewEncoder(w).Encode(resp)
 	return
 }
@@ -43,13 +45,13 @@ func (h *Handler) BroadCastMessageHandler(w http.ResponseWriter, r *http.Request
 
 	if r.Method != "POST" {
 		h.logger.Warn("not support the others Method")
-		json.NewEncoder(w).Encode(util.BuildResponse(http.StatusNotImplemented, nil, "not support the others Method"))
+		json.NewEncoder(w).Encode(h.utilInstance.BuildResponse(http.StatusNotImplemented, nil, "not support the others Method"))
 		return
 	}
 	reqBody, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		h.logger.Error("server internal error", zap.String("req_body", string(reqBody)), zap.String("error", err.Error()))
-		json.NewEncoder(w).Encode(util.BuildResponse(http.StatusInternalServerError, nil, "server internal error"))
+		json.NewEncoder(w).Encode(h.utilInstance.BuildResponse(http.StatusInternalServerError, nil, "server internal error"))
 		return
 	}
 	type Body struct {
@@ -58,7 +60,7 @@ func (h *Handler) BroadCastMessageHandler(w http.ResponseWriter, r *http.Request
 	var body Body
 	if err := json.Unmarshal(reqBody, &body); err != nil {
 		h.logger.Error("unmarshal failed", zap.String("req_body", string(reqBody)), zap.Error(err))
-		if err := json.NewEncoder(w).Encode(util.BuildResponse(http.StatusInternalServerError, nil, "server internal error")); err != nil {
+		if err := json.NewEncoder(w).Encode(h.utilInstance.BuildResponse(http.StatusInternalServerError, nil, "server internal error")); err != nil {
 			h.logger.Error("send response failed", zap.Error(err))
 		}
 		return
@@ -68,11 +70,11 @@ func (h *Handler) BroadCastMessageHandler(w http.ResponseWriter, r *http.Request
 	timestamp := time.Now().Unix()
 	if err := h.service.BroadcastMessage(timestamp, body.Message); err != nil {
 		h.logger.Error("broadcast to queue failed", zap.Error(err))
-		_ = json.NewEncoder(w).Encode(util.BuildResponse(http.StatusInternalServerError, nil, "server internal error"))
+		_ = json.NewEncoder(w).Encode(h.utilInstance.BuildResponse(http.StatusInternalServerError, nil, "server internal error"))
 		return
 	}
 	h.logger.Debug("Broadcast message success", zap.String("message", body.Message), zap.Int64("timestamp", timestamp))
-	if err := json.NewEncoder(w).Encode(util.BuildResponse(http.StatusOK, nil, "success")); err != nil {
+	if err := json.NewEncoder(w).Encode(h.utilInstance.BuildResponse(http.StatusOK, nil, "success")); err != nil {
 		h.logger.Error("send response failed", zap.Error(err))
 	}
 	return

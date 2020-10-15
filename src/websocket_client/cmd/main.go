@@ -26,7 +26,7 @@ func main() {
 		panic(err)
 	}
 	//// init websocket
-	id := util.GenerateRandomIdentifier()
+	id := util.NewUtil().GenerateRandomIdentifier()
 	socketClient := client.NewWebSocketClient(config, logger, id)
 	socketClient.Dial()
 	flag.Parse()

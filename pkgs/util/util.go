@@ -1,6 +1,7 @@
 package util
 
 import (
+	"bytes"
 	"encoding/json"
 	uuid "github.com/satori/go.uuid"
 	"io/ioutil"
@@ -12,6 +13,17 @@ const (
 	chars = "abcdefghijklmnopqrstuvwxyz0123456789"
 )
 
+type Util interface {
+	ExecuteRequest(request []byte, result interface{}, url string) error
+	RandomString(l uint) string
+	GenerateRandomIdentifier() string
+	BuildResponse(code int, body interface{}, message string) BaseResponse
+}
+type implUtil struct {}
+
+func NewUtil() Util{
+	return &implUtil{}
+}
 // BaseResponse represents struct of base response
 type BaseResponse struct {
 	Data interface{} `json:"data,omitempty"`
@@ -23,7 +35,7 @@ type Meta struct{
 	Code	int    `json:"code,omitempty"`
 }
 
-func RandomString(l uint) string {
+func (u *implUtil)RandomString(l uint) string {
 	s := make([]byte, l)
 	for i := 0; i < int(l); i++ {
 		s[i] = chars[rand.Intn(len(chars))]
@@ -31,18 +43,22 @@ func RandomString(l uint) string {
 	return string(s)
 }
 
-func GenerateRandomIdentifier() string {
+func (u *implUtil)GenerateRandomIdentifier() string {
 	return uuid.NewV4().String()
 }
 
-func BuildResponse(code int, body interface{}, message string) BaseResponse {
+func (u *implUtil)BuildResponse(code int, body interface{}, message string) BaseResponse {
 	return BaseResponse{Data: body, Meta: Meta{Message: message, Code: code}}
 }
 
 
-func ExecuteRequest(request *http.Request, result interface{}) error {
+func (u *implUtil)ExecuteRequest(request []byte, result interface{}, url string) error {
+	requestPost, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(request))
+	if err != nil {
+		return err
+	}
 	httpClient := http.Client{}
-	response, err := httpClient.Do(request)
+	response, err := httpClient.Do(requestPost)
 	if err != nil {
 		return err
 	}

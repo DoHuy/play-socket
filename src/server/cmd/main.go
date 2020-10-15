@@ -5,6 +5,7 @@ import (
 	"github.com/gorilla/websocket"
 	"net/http"
 	"programs/pkgs/log"
+	"programs/pkgs/util"
 	"programs/src/server/config"
 	"programs/src/server/handler"
 )
@@ -22,8 +23,9 @@ func main() {
 	}
 	//init websocket instance
 	upgrade := websocket.Upgrader{}
+	utilInstance := util.NewUtil()
 	// init new handler
-	handler := handler.NewHandler(config, logger, upgrade)
+	handler := handler.NewHandler(config, logger, upgrade, utilInstance)
 
 	// run server
 	http.HandleFunc("/broadcast", func(writer http.ResponseWriter, request *http.Request) {
