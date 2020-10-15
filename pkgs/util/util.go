@@ -1,8 +1,11 @@
 package util
 
 import (
+	"encoding/json"
 	uuid "github.com/satori/go.uuid"
+	"io/ioutil"
 	"math/rand"
+	"net/http"
 )
 
 const (
@@ -35,3 +38,27 @@ func GenerateRandomIdentifier() string {
 func BuildResponse(code int, body interface{}, message string) BaseResponse {
 	return BaseResponse{Data: body, Meta: Meta{Message: message, Code: code}}
 }
+
+
+func ExecuteRequest(request *http.Request, result interface{}) error {
+	httpClient := http.Client{}
+	response, err := httpClient.Do(request)
+	if err != nil {
+		return err
+	}
+
+	if response != nil && response.Body != nil {
+		defer response.Body.Close()
+	}
+
+	respBytes, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(respBytes, &result)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
