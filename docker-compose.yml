@@ -1,0 +1,49 @@
+version: '3'
+services:
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    ports:
+      - "8080:8080"
+    networks:
+      - backend
+    environment:
+      - LISTEN_ADDRESS=0.0.0.0:8080
+      - SERVER_LOG_PATH=server.log
+      - TEMPORARY_FILE=data.messages.tmp
+      - ENV_MODE=PRODUCTION
+    volumes:
+      - ./data.messages.tmp:/data.messages.tmp
+    restart: always
+  publishing:
+    build:
+      context: .
+      dockerfile: Dockerfile.publishing
+    networks:
+      - backend
+    depends_on:
+      - server
+    environment:
+      - PUBLISHING_LOG_PATH=publishing.log
+      - HOST=0.0.0.0:8080
+      - INTERVAL_TIME=10
+      - ENV_MODE=PRODUCTION
+    volumes:
+      - ./publishing.log:/publishing.log
+    restart: always
+  websocket:
+    build:
+      context: .
+      dockerfile: Dockerfile.websocket
+    networks:
+      - backend
+    environment:
+      - WEBSOCKET_LOG_PATH=websocket.log
+      - HOST=0.0.0.0:8080
+      - ENV_MODE=PRODUCTION
+    volumes:
+      - ./websocket.log:/websocket.log
+networks:
+  backend:
+    driver: bridge

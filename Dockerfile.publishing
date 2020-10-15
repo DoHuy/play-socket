@@ -1,0 +1,7 @@
+FROM golang:1.12.5 as builder
+WORKDIR /programs
+COPY . /programs
+RUN go mod download
+
+RUN CGO_ENABLED=0 GOOS=linux go build -o publishing_client ./src/publishing_client/cmd/main.go
+CMD ["./publishing_client"]
