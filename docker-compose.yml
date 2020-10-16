@@ -14,7 +14,7 @@ services:
       - TEMPORARY_FILE=data.messages.tmp
       - ENV_MODE=PRODUCTION
     volumes:
-      - ./data.messages.tmp:/data.messages.tmp
+      - ./server.log:/programs/server.log
     restart: always
   publishing:
     build:
@@ -30,7 +30,7 @@ services:
       - INTERVAL_TIME=10
       - ENV_MODE=PRODUCTION
     volumes:
-      - ./publishing.log:/publishing.log
+      - ./publishing.log:/programs/publishing.log
     restart: always
   websocket:
     build:
@@ -45,7 +45,7 @@ services:
     depends_on:
       - server
     volumes:
-      - ./websocket.log:/websocket.log
+      - ./websocket.log:/programs/websocket.log
     restart: always
 networks:
   backend:
